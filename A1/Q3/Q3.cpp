@@ -17,6 +17,13 @@ void sendVector(int rec, int *ar, int N){
     // cout << "vector sent with size" << N << endl;
 }
 
+void broadcastVector(int numprocs, int *ar, int N){
+    for(int i=1; i<numprocs; i++){
+            MPI_Send(&N, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
+            MPI_Send(ar, N, MPI_INT, i, 0, MPI_COMM_WORLD);
+    }
+}
+
 vector <int> receiveVector(int sender){
     int N;
     MPI_Status stat; 
@@ -53,6 +60,46 @@ vector <vector <int>> createGraph(int orgN, int orgM, vector <int> orgEdgeListFr
         return adjListNew;
 }
 
+bool toColourOrNot(vector <vector <int>> &adjList, vector <int> &currentColour, int node){
+    if(currentColour[node] != 0) return false;
+
+    for(auto x: adjList[node]){
+        if(x > node && currentColour[x] == 0) return false;
+    }
+
+    return true;
+}
+
+int findLowestAvailColour(vector <vector <int>> &adjList, vector <int> &currentColour, int node){
+    vector <int> flag(502, 0);
+
+    for(auto x : adjList[node]){
+        if(currentColour[x]) flag[currentColour[x]] = 1;
+    }
+
+    int probe = 1;
+    for(probe = 1; flag[probe] != 0; probe++) ;
+    return probe;
+}
+
+vector <int> colourGraph(vector <vector <int>> &adjList, vector <int> currentColour, int left, int right){
+    //Colours from [left, right)
+    for(int i=left; i<right; i++){
+        if(toColourOrNot(adjList, currentColour, i)){
+            currentColour[i] = findLowestAvailColour(adjList, currentColour, i);
+        }
+    }
+    return currentColour; 
+}
+
+bool taskDone(vector <int> currentColour, int M){
+    for(int i=1; i<=M; i++){
+        if(currentColour[i] == 0) return false;
+    }
+
+    return true;
+}
+
 int main( int argc, char **argv ) {
     int rank, numprocs;
 
@@ -87,12 +134,28 @@ int main( int argc, char **argv ) {
         }
         vector <vector <int>> adjListNew = createGraph(orgN, orgM, orgEdgeListFrom, orgEdgeListTo);
 
-        for(int i=1; i<=orgM; i++){
-            cout << "\nFor new node " << i << endl;
-            for(auto x: adjListNew[i]){
-                cout << x << " ";
+        vector <int> currentColour(orgM+1, 0);
+        int numInts = (rank == numprocs-1) ? orgM - (orgM/numprocs) * rank : (orgM/numprocs);
+        int tempInts;
+        vector <vector <int>> newColours(numprocs);
+        while(!taskDone(currentColour, orgM)){
+            broadcastVector(numprocs, &currentColour[0], orgM+1);
+            newColours[0] = colourGraph(adjListNew, currentColour, (orgM/numprocs)*rank + 1, (orgM/numprocs)*rank + 1 + numInts);
+
+            for(int i=1; i<numprocs; i++){
+                newColours[i] = receiveVector(i);
+                tempInts = (i == numprocs-1) ? orgM - (orgM/numprocs) * rank : (orgM/numprocs);
+                for(int j = (orgM/numprocs)*rank + 1; j < (orgM/numprocs)*rank + 1 + tempInts; j++){
+                    currentColour[j] = newColours[i][j];
+                }
             }
         }
+        // for(int i=1; i<=orgM; i++){
+        //     cout << "\nFor new node " << i << endl;
+        //     for(auto x: adjListNew[i]){
+        //         cout << x << " ";
+        //     }
+        // }
     }
     else {
         //Slave Code here
@@ -107,14 +170,21 @@ int main( int argc, char **argv ) {
 
         auto adjListNew = createGraph(orgN, orgM, orgEdgeListFrom, orgEdgeListTo);
 
-        cout << "Slave num: " << rank << endl;
-        for(int i=1; i<=orgM; i++){
-            cout << "\nFor new node " << i << endl;
-            for(auto x: adjListNew[i]){
-                cout << x << " ";
-            }
+        int numInts = (rank == numprocs-1) ? orgM - (orgM/numprocs) * rank : (orgM/numprocs);
+        vector <int> currentColour = receiveVector(0);
+        while(!taskDone(currentColour, orgM)){
+            currentColour = colourGraph(adjListNew, currentColour, (orgM/numprocs)*rank + 1, (orgM/numprocs)*rank + 1 + numInts);
+            sendVector(0, &currentColour[0], orgM);
+            currentColour = receiveVector(0);
         }
-        cout << "\n-----\n";
+        // cout << "Slave num: " << rank << endl;
+        // for(int i=1; i<=orgM; i++){
+        //     cout << "\nFor new node " << i << endl;
+        //     for(auto x: adjListNew[i]){
+        //         cout << x << " ";
+        //     }
+        // }
+        // cout << "\n-----\n";
     }
     MPI_Barrier( MPI_COMM_WORLD );
     double elapsedTime = MPI_Wtime() - tbeg;
