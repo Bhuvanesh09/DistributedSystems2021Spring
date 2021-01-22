@@ -220,6 +220,8 @@ int main( int argc, char **argv ) {
         // }
         // cout << "\n-----\n";
     }
+
+
     MPI_Barrier( MPI_COMM_WORLD );
     double elapsedTime = MPI_Wtime() - tbeg;
     double maxTime;
