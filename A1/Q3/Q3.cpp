@@ -12,6 +12,7 @@ typedef long long int ll;
 
 void sendVector(int rec, int *ar, int N){
     // cout << "Sedingi vector with size " << N << endl;
+    // cout << "Sending to " << rec << endl;
     MPI_Send(&N, 1, MPI_INT, rec, 0, MPI_COMM_WORLD);
     MPI_Send(ar, N, MPI_INT, rec, 0, MPI_COMM_WORLD);
     // cout << "vector sent with size" << N << endl;
@@ -21,8 +22,8 @@ void broadcastVector(int numprocs, int *ar, int N, int stop){
 
     for(int i=1; i<numprocs; i++){
         MPI_Send(&stop, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
-        if(stop == 1) return;
     }
+    if(stop == 1) return;
     for(int i=1; i<numprocs; i++){
             MPI_Send(&N, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
             MPI_Send(ar, N, MPI_INT, i, 0, MPI_COMM_WORLD);
@@ -154,6 +155,7 @@ int main( int argc, char **argv ) {
             sendVector(proc, &orgEdgeListFrom[0], orgM+1);
             sendVector(proc, &orgEdgeListTo[0], orgM+1);
         }
+        // if(orgM > numprocs) numprocs = orgM;
         vector <vector <int>> adjListNew = createGraph(orgN, orgM, orgEdgeListFrom, orgEdgeListTo);
         // cout << "1 ";
         vector <int> currentColour(orgM+1, 0);
@@ -181,12 +183,13 @@ int main( int argc, char **argv ) {
                 //     break;
                 // }
                 // cout << "6 ";
+                // cout << "I am " << rank << " Expecting from  " << i;
                 if(i!=0) newColours[i] = receiveVector(i);
                 // cout << "7 ";
                 tempInts = (i == numprocs-1) ? orgM - (orgM/numprocs) * i : (orgM/numprocs);
+                // cout << "\n For proc " << i << " " << (orgM/numprocs)*i + 1 << " to " << (orgM/numprocs)*i + tempInts << endl;
                 for(int j = (orgM/numprocs)*i + 1; j < (orgM/numprocs)*i + 1 + tempInts; j++){
                     currentColour[j] = newColours[i][j];
-                    // if(j==2) cout << "HI " << currentColour[j] << " " << newColours[i][j] << " i: " << i;
                 }
             }
 
@@ -207,11 +210,13 @@ int main( int argc, char **argv ) {
         vector <int> orgEdgeListFrom = receiveVector(0);
         vector <int> orgEdgeListTo = receiveVector(0);
 
+        int stopOrNot = 0;
+        // if(rank >= orgM) stopOrNot = 1;
         auto adjListNew = createGraph(orgN, orgM, orgEdgeListFrom, orgEdgeListTo);
 
         int numInts = (rank == numprocs-1) ? orgM - (orgM/numprocs) * rank : (orgM/numprocs);
-        int stopOrNot;
-        MPI_Recv(&stopOrNot, 1, MPI_INT, 0, 0 ,MPI_COMM_WORLD, &stat);
+        if(stopOrNot==0) MPI_Recv(&stopOrNot, 1, MPI_INT, 0, 0 ,MPI_COMM_WORLD, &stat);
+        // cout << "I am " << rank << " Expecting from  " << 0;
         vector <int> currentColour = receiveVector(0);
         while(stopOrNot != 1){
             currentColour = colourGraph(adjListNew, currentColour, (orgM/numprocs)*rank + 1, (orgM/numprocs)*rank + 1 + numInts);
