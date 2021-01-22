@@ -1,9 +1,18 @@
 #include "mpi.h"
 #include <iostream>
 #include <iomanip>
+#include <fstream>
 
 using namespace std;
 int main(int argc, char *argv[]){
+
+    ifstream inFile(argv[1]);
+    streambuf *cinbuf = cin.rdbuf();
+    cin.rdbuf(inFile.rdbuf());
+
+    ofstream outFile(argv[2]);
+    streambuf *coutbuf = cout.rdbuf();
+    cout.rdbuf(outFile.rdbuf());
 
     char idstr[128]; 
     char buff[128]; 
@@ -69,6 +78,9 @@ int main(int argc, char *argv[]){
     if ( myid == 0 ) {
         printf( "Total time (s): %f\n", maxTime );
     }
+
+    cin.rdbuf(cinbuf);
+    cout.rdbuf(coutbuf);
 
     /* shut down MPI */
     MPI_Finalize(); 

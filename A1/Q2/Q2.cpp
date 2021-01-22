@@ -2,6 +2,7 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
+#include <fstream>
 using namespace std;
 
 void swap(int *ptr1, int *ptr2){
@@ -64,6 +65,14 @@ vector <int> receiveVector(int sender){
 
 
 int main(int argc, char *argv[]){
+
+    ifstream inFile(argv[1]);
+    streambuf *cinbuf = cin.rdbuf();
+    cin.rdbuf(inFile.rdbuf());
+
+    ofstream outFile(argv[2]);
+    streambuf *coutbuf = cout.rdbuf();
+    cout.rdbuf(outFile.rdbuf());
 
     char idstr[128]; 
     char buff[128]; 
@@ -158,6 +167,8 @@ int main(int argc, char *argv[]){
         printf( "Total time (s): %f\n", maxTime );
     }
 
+    cin.rdbuf(cinbuf);
+    cout.rdbuf(coutbuf);
     /* shut down MPI */
     MPI_Finalize(); 
     return 0;

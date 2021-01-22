@@ -114,6 +114,15 @@ bool taskDone(vector <int> currentColour, int M){
 }
 
 int main( int argc, char **argv ) {
+
+    ifstream inFile(argv[1]);
+    streambuf *cinbuf = cin.rdbuf();
+    cin.rdbuf(inFile.rdbuf());
+
+    ofstream outFile(argv[2]);
+    streambuf *coutbuf = cout.rdbuf();
+    cout.rdbuf(outFile.rdbuf());
+
     int rank, numprocs;
 
     MPI_Status stat;
@@ -230,6 +239,8 @@ int main( int argc, char **argv ) {
         printf( "Total time (s): %f\n", maxTime );
     }
 
+    cin.rdbuf(cinbuf);
+    cout.rdbuf(coutbuf);
     /* shut down MPI */
     MPI_Finalize();
     return 0;
