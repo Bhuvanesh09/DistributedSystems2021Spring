@@ -60,18 +60,47 @@ correctWeight(From, To, Wt, CurMap) ->
             V 
     end.
 
-relax_these_edges([], CurMap) ->
-    CurMap;
-relax_these_edges(Edges, CurMap) ->
+relax_these_edges([], CurMap, NodeChanges) ->
+    NodeChanges;
+relax_these_edges(Edges, CurMap, NodeChanges) ->
     [CurEdge | RestEdges] = Edges,
     {From, To, Wt} = CurEdge,
-    NewMap = maps:put(To, correctWeight(From, To, Wt, CurMap), CurMap),
-    relax_these_edges(RestEdges, NewMap).
+    U = maps:get(From, CurMap),
+    V = maps:get(To, CurMap),
+    if U + Wt < V ->
+           NewNodeCh = [{To, U + Wt} | NodeChanges];
+    true -> 
+           NewNodeCh = NodeChanges
+    end,
+    %NewMap = maps:put(To, correctWeight(From, To, Wt, CurMap), CurMap),
+
+    relax_these_edges(RestEdges, CurMap, NewNodeCh).
+
+updateMap([], CurMap) ->
+    CurMap;
+updateMap(NodeChanges, CurMap) ->
+    %io:fwrite("~p\n", [NodeChanges]),
+    [FirstCh | RestCh] = NodeChanges,
+    {V, Val} = FirstCh,
+    CurVal = maps:get(V, CurMap),
+    if Val <  CurVal->
+           NewMap = maps:put(V, Val, CurMap);
+    true ->
+           NewMap = CurMap
+    end,
+
+    updateMap(RestCh, NewMap).
 
 forRelax(Min, Max, Edges, CurMap) when Max =< Min ->
     CurMap;
 forRelax(Min, Max, Edges, CurMap) ->
-    NewMap = relax_these_edges(Edges, CurMap),
+    NodeChanges = relax_these_edges(Edges, CurMap, []),
+    %To Do:
+    %Distribute the NodeChanges to the sub processes.
+    NewMap = updateMap(NodeChanges, CurMap),
+    %To Do :
+    %Have an updateMap(NodeChanges, CurMap) -> NewMap function. : DONE
+
     %Make changes here to :
         %- Divide Edges to different disjoint sets for each processor;
         %- Send Map to each one of them.
@@ -80,12 +109,24 @@ forRelax(Min, Max, Edges, CurMap) ->
         %- Send to all the processes again.
     forRelax(Min+1, Max, Edges, NewMap).
 
+subprocess_life() ->
+    receive
+        {Server, [], CurMap} ->
+            Server ! {[]},
+            subprocess_life();
+        {Server, EdgeList, CurMap} -> 
+            NodeChanges = relax_these_edges(EdgeList, CurMap, []),
+            Server ! {NodeChanges},
+            subprocess_life()
+    end.  
+
 bellman_ford(Graph, N, M, S) ->
     CurMap = initialize_map(N, S),
     NewMap = forRelax(1, N-1, Graph, CurMap),
 
     List = maps:to_list(NewMap),
     io:fwrite("~p\n", [List]).
+
 
 
 
