@@ -34,19 +34,8 @@ main(InFile, OutFile) ->
                         re:split(string:strip(Line4, right, 10), "\s+", [notempty]))), 
     file:close(Fd),
 
-    DistanceList = bellman_ford(Graph, N, M, S, P), 
-
-    {ok, OutFd} = file:open(OutFile, [append]),
-    printDistances(DistanceList, OutFd),
+    bellman_ford(Graph, N, M, S, P), 
     ok.
-
-printDistances([], Fd) ->
-    ok;
-printDistances(DistanceList, Fd) ->
-    [Cur | RestList] = DistanceList,
-    {Node, Distance} = Cur,
-    io:format(Fd, "~p ~p\n", [Node, Distance]),
-    printDistances(RestList, Fd).
 
 %For loop for taking input of the Graph 
 for(Min, Max, Func, Graph, Fd) when Max =< Min ->
@@ -98,7 +87,6 @@ updateMap([], CurMap) ->
     CurMap;
 updateMap(NodeChanges, CurMap) ->
     %io:fwrite("~p\n", [NodeChanges]),
-    %io:fwrite("~p\n", [CurMap]),
     [FirstCh | RestCh] = NodeChanges,
     {V, Val} = FirstCh,
     CurVal = maps:get(V, CurMap),
@@ -150,20 +138,20 @@ forRelax(Min, Max, Edges, CurMap, ProcsList, NumProc) when Max =< Min ->
 forRelax(Min, Max, Edges, CurMap, ProcsList, NumProc) ->
     %NodeChanges = relax_these_edges(Edges, CurMap, []),
     %To Do:
-    %Distribute the NodeChanges to the sub processes. DONE
+    %Distribute the NodeChanges to the sub processes.
     sendData(Edges, CurMap, ProcsList, NumProc),
     NodeChanges = receiveNodeChanges(NumProc, []),
-    %io:fwrite("NodeChanges: ~p\n", [NodeChanges]),
+    io:fwrite("NodeChanges: ~p\n", [NodeChanges]),
     NewMap = updateMap(NodeChanges, CurMap),
     %To Do :
     %Have an updateMap(NodeChanges, CurMap) -> NewMap function. : DONE
 
     %Make changes here to :
-        %- Divide Edges to different disjoint sets for each processor; DONE
-        %- Send Map to each one of them. DONE
-        %- They send list of updated vertices DONE
-        %- Combine the received vertices updates to make new Map. DONE
-        %- Send to all the processes again. DONE
+        %- Divide Edges to different disjoint sets for each processor;
+        %- Send Map to each one of them.
+        %- They send list of updated vertices
+        %- Combine the received vertices updates to make new Map. 
+        %- Send to all the processes again.
     forRelax(Min+1, Max, Edges, NewMap, ProcsList, NumProc).
 
 subprocess_life() ->
@@ -184,7 +172,6 @@ bellman_ford(Graph, N, M, S, P) ->
     ProcsList = forMakeProcess(0, P-1, []),
     NewMap = forRelax(1, N, Graph, CurMap, ProcsList, P-1),
 
-    DistanceList = maps:to_list(NewMap),
-    io:fwrite("~p\n", [DistanceList]),
-    DistanceList.
+    List = maps:to_list(NewMap),
+    io:fwrite("~p\n", [List]).
 
