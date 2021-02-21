@@ -1,8 +1,9 @@
 -module('2018113002_2').
 
--export([main/2]).
+-export([main/1]).
 
-main(InFile, OutFile) ->
+main(Args) ->
+    [InFile, OutFile] = Args,
     {ok, Fd} = file:open(InFile, [read]),
     
     %Reading the number of processes
@@ -18,8 +19,8 @@ main(InFile, OutFile) ->
                         re:split(string:strip(Line2, right, 10), "\s+", [notempty]))), 
 
     %Reading all the edges
-    ReadOneEdge = fun(Fd) ->
-                            {ok, Line3} = file:read_line(Fd),
+    ReadOneEdge = fun(FdNew) ->
+                            {ok, Line3} = file:read_line(FdNew),
                             [X, Y, W] = lists:map(fun erlang:list_to_integer/1, 
                                                 lists:map(fun erlang:binary_to_list/1,    
                                                 re:split(string:strip(Line3, right, 10), "\s+", [notempty]))),
@@ -40,7 +41,7 @@ main(InFile, OutFile) ->
     printDistances(DistanceList, OutFd),
     ok.
 
-printDistances([], Fd) ->
+printDistances([], _Fd) ->
     ok;
 printDistances(DistanceList, Fd) ->
     [Cur | RestList] = DistanceList,
@@ -49,7 +50,7 @@ printDistances(DistanceList, Fd) ->
     printDistances(RestList, Fd).
 
 %For loop for taking input of the Graph 
-for(Min, Max, Func, Graph, Fd) when Max =< Min ->
+for(Min, Max, _Func, Graph, _Fd) when Max =< Min ->
     Graph;
 
 for(Min, Max, Func, Graph, Fd) when Max > Min ->
@@ -68,17 +69,17 @@ initialize_map(N, S) ->
     CurMap = maps:from_list([ {I, 100000} || I <- lists:seq(1,N)]),
     maps:put(S, 0, CurMap).
 
-correctWeight(From, To, Wt, CurMap) ->
-    U = maps:get(From, CurMap),
-    V = maps:get(To, CurMap),
+%correctWeight(From, To, Wt, CurMap) ->
+    %U = maps:get(From, CurMap),
+    %V = maps:get(To, CurMap),
 
-    if U + Wt =< V ->
-            U + Wt ;
-    true -> 
-            V 
-    end.
+    %if U + Wt =< V ->
+            %U + Wt ;
+    %true -> 
+            %V 
+    %end.
 
-relax_these_edges([], CurMap, NodeChanges) ->
+relax_these_edges([], _CurMap, NodeChanges) ->
     NodeChanges;
 relax_these_edges(Edges, CurMap, NodeChanges) ->
     [CurEdge | RestEdges] = Edges,
@@ -110,7 +111,7 @@ updateMap(NodeChanges, CurMap) ->
 
     updateMap(RestCh, NewMap).
 
-sendData(Edges, CurMap, [], 0) ->
+sendData(_Edges, _CurMap, [], 0) ->
     ok;
 sendData([], CurMap, ProcsList, NumProc) ->
     [CurProc | NextProcsList] = ProcsList,
@@ -145,7 +146,7 @@ receiveNodeChanges(NumProc, NodeChanges) ->
     end.
 
 
-forRelax(Min, Max, Edges, CurMap, ProcsList, NumProc) when Max =< Min ->
+forRelax(Min, Max, _Edges, CurMap, _ProcsList, _NumProc) when Max =< Min ->
     CurMap;
 forRelax(Min, Max, Edges, CurMap, ProcsList, NumProc) ->
     %NodeChanges = relax_these_edges(Edges, CurMap, []),
@@ -168,7 +169,7 @@ forRelax(Min, Max, Edges, CurMap, ProcsList, NumProc) ->
 
 subprocess_life() ->
     receive
-        {Server, [], CurMap} ->
+        {Server, [], _CurMap} ->
             %io:fwrite("Got empty list\n"),
             Server ! {[]},
             subprocess_life();
@@ -179,7 +180,7 @@ subprocess_life() ->
             subprocess_life()
     end.  
 
-bellman_ford(Graph, N, M, S, P) ->
+bellman_ford(Graph, N, _M, S, P) ->
     CurMap = initialize_map(N, S),
     ProcsList = forMakeProcess(0, P-1, []),
     NewMap = forRelax(1, N, Graph, CurMap, ProcsList, P-1),

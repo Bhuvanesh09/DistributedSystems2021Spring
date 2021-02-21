@@ -1,11 +1,11 @@
 -module('2018113002_1').
 -import(string, [concat/2]).
--compile(export_all).
 
-%-export([main/2]).
+-export([main/1]).
 
 %main(NumProc, TokenValue) ->
-main(InFile, OutFile) ->
+main(Args) ->
+    [InFile, OutFile] = Args,
     {ok, Fh} = file:open(InFile, [read]),
     {ok, Words} = file:read_line(Fh),
     [NumProc, TokenValue] = lists:map(fun erlang:list_to_integer/1, 
