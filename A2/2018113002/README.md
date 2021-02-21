@@ -25,4 +25,10 @@ Bellman ford algorithm has been used to distribute the workload and do this work
 - Then each process gets another set of edges to relax for the next iteration.
 - Hence work of each subprocess is truly atomised in the sense that the same subprocess might receive different set of edges in the next iteration and the code would still function properly which allows for an increase in the number of processes dynamically during the runtime.
 
+### Time Complexity:
+
+- Worst case complexity is still `O(V*E)`.
+- With the distributed implementation, we will get some constant factor improvisation.
+- Best case complexity is `O(V*E/P)` when there won't be much changes in each relaxation iteration.
+
 ---

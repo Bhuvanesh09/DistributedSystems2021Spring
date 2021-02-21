@@ -1,10 +1,9 @@
-Process 2 received TokenValue 100 from 1
-Process 3 received TokenValue 100 from 2
-Process 4 received TokenValue 100 from 3
-Process 5 received TokenValue 100 from 4
-Process 6 received TokenValue 100 from 5
-Process 7 received TokenValue 100 from 6
-Process 8 received TokenValue 100 from 7
-Process 9 received TokenValue 100 from 8
-Process 10 received TokenValue 100 from 9
-Process 0 received TokenValue 100 from 9
+1 0
+2 508
+3 227
+4 414
+5 12
+6 381
+7 218
+8 45
+9 359

@@ -56,7 +56,9 @@ for(Min, Max, _Func, Graph, _Fd) when Max =< Min ->
 for(Min, Max, Func, Graph, Fd) when Max > Min ->
     %Do something here
     GraphNew = [Func(Fd) | Graph],
-    for(Min+1, Max, Func, GraphNew, Fd).
+    {X, Y, W} = hd(GraphNew),
+    GraphNew2 = [{Y, X, W} | GraphNew],
+    for(Min+1, Max, Func, GraphNew2, Fd).
 
 forMakeProcess(Min, Max, ProcsList) when Min >= Max ->
     ProcsList;
@@ -180,10 +182,41 @@ subprocess_life() ->
             subprocess_life()
     end.  
 
+%========================= OLD CODE =========================
+%For the cases when the processor is only 1, I would have to use my old code. 
+%Thankfully, erlang has function overloading based on prototype so I won't have to change much.
+correctWeight(From, To, Wt, CurMap) ->
+    U = maps:get(From, CurMap),
+    V = maps:get(To, CurMap),
+    if U + Wt =< V ->
+        U + Wt ;
+    true -> 
+        V 
+    end.
+
+relax_these_edges([], CurMap) ->
+    CurMap;
+relax_these_edges(Edges, CurMap) ->
+    [CurEdge | RestEdges] = Edges,
+    {From, To, Wt} = CurEdge,
+    NewMap = maps:put(To, correctWeight(From, To, Wt, CurMap), CurMap),
+    relax_these_edges(RestEdges, NewMap).
+
+forRelax(Min, Max, _Edges, CurMap) when Max =< Min ->
+        CurMap;
+forRelax(Min, Max, Edges, CurMap) ->
+        NewMap = relax_these_edges(Edges, CurMap),
+        forRelax(Min+1, Max, Edges, NewMap).
+%==========================END OF OLD CODE=======================
+
 bellman_ford(Graph, N, _M, S, P) ->
     CurMap = initialize_map(N, S),
-    ProcsList = forMakeProcess(0, P-1, []),
-    NewMap = forRelax(1, N, Graph, CurMap, ProcsList, P-1),
+    if P>1 ->
+        ProcsList = forMakeProcess(0, P-1, []),
+        NewMap = forRelax(1, N, Graph, CurMap, ProcsList, P-1);
+    true ->
+        NewMap = forRelax(1, N, Graph, CurMap)
+    end,
 
     DistanceList = maps:to_list(NewMap),
     io:fwrite("~p\n", [DistanceList]),
