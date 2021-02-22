@@ -221,4 +221,3 @@ bellman_ford(Graph, N, _M, S, P) ->
     DistanceList = maps:to_list(NewMap),
     io:fwrite("~p\n", [DistanceList]),
     DistanceList.
-

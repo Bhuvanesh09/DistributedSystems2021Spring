@@ -15,7 +15,7 @@ main(Args) ->
     Procs = for(0, NumProc-1, []),
     SelfAtLast = tl(Procs) ++ [self()],
     ProcsList = [self()] ++ Procs,
-    io:fwrite("~p\n~p\n~p\n", [SelfAtLast, ProcsList, TokenValue]),
+    %io:fwrite("~p\n~p\n~p\n", [SelfAtLast, ProcsList, TokenValue]),
     Next = hd(Procs),
     Next ! {self(), TokenValue, SelfAtLast, ProcsList, OutFile},
     life().
@@ -44,8 +44,8 @@ life() ->
             io:format(Fh,"Process ~p received TokenValue ~p from ~p\n", [SelfId, TokenValue, SendId]),
             ok;
         {Sender ,TokenValue, Procs, ProcsList, OutFile} ->
-            SendId = string:str(ProcsList, [Sender]),
-            SelfId = string:str(ProcsList, [self()]),
+            SendId = string:str(ProcsList, [Sender]) - 1,
+            SelfId = string:str(ProcsList, [self()]) - 1,
             {ok, Fh} = file:open(OutFile, [append]),
             io:format(Fh,"Process ~p received TokenValue ~p from ~p\n", [SelfId, TokenValue, SendId]),
             ListLeft = tl(Procs),
